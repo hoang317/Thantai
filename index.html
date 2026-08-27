@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAPPY BIRTHDAY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<canvas id="stars-canvas"></canvas>
+<canvas id="fx-canvas"></canvas>
+<div id="balloon-layer"></div>
+
+<audio id="bgMusic" loop></audio>
+<audio id="songAudio"></audio>
+<button id="musicToggle" class="music-toggle" title="Bật / tắt nhạc nền">🔈</button>
+
+<div id="hud">
+  <div class="brand">HAPPY BIRTHDAY</div>
+  <div class="clock" id="clockDisplay">15:00</div>
+</div>
+<div id="progress">
+  <div class="dot" data-lock="1"></div>
+  <div class="dot" data-lock="2"></div>
+  <div class="dot" data-lock="3"></div>
+  <div class="dot" data-lock="4"></div>
+  <div class="dot" data-lock="5"></div>
+  <div class="dot" data-lock="6"></div>
+  <div class="dot" data-lock="7"></div>
+  <div class="dot" data-lock="8"></div>
+  <div class="dot" data-lock="9"></div>
+</div>
+
+<div id="fragment-pop" class="fragment-pop"></div>
+<div class="skip-hint">nhấn phím → để bỏ qua hiệu ứng chữ</div>
+
+<div id="app">
+
+  <!-- SCREEN -1 — LOCKED (mở đúng giờ) -->
+  <section class="screen" data-screen="locked">
+    <div class="vault-wrap">
+      <div class="vault-ring r1"></div>
+      <div class="vault-ring r2"></div>
+      <div class="vault-ring r3"></div>
+      <div class="vault-core">🔒</div>
+    </div>
+    <h1 class="title" style="font-size:clamp(20px,4vw,30px);">Hiện đang khóa</h1>
+    <p class="sub" id="lockedTargetText">Chờ đợi là hạnh phúc</p>
+    <div class="clock-big" id="lockedCountdown">--:--:--:--</div>
+    <p class="hint-text">quay lại đúng thời điểm để bắt đầu trò chơi</p>
+  </section>
+
+  <!-- SCREEN 0 — HOST INTRO -->
+  <section class="screen" data-screen="intro">
+    <div id="host-box">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="introLine"><span class="cursor"></span></div>
+    </div>
+    <button class="btn" id="startBtn" style="opacity:0;pointer-events:none;transition:opacity .6s ease;">START THE GAME</button>
+  </section>
+
+  <!-- SCREEN 1 — LOCK 1 -->
+  <section class="screen" data-screen="lock1">
+    <div class="vault-wrap" id="vaultWrap1">
+      <div class="vault-ring r1"></div>
+      <div class="vault-ring r2"></div>
+      <div class="vault-ring r3"></div>
+      <div class="vault-core">?</div>
+    </div>
+    <div class="puzzle-box">
+      <div class="puzzle-q" id="lock1Question"></div>
+      <div class="cipher" id="lock1Cipher"></div>
+      <div class="row">
+        <input type="text" id="lock1Input" placeholder="Nhập đáp án" autocomplete="off">
+        <button class="btn" id="lock1Submit">Mở khóa</button>
+      </div>
+      <div class="feedback" id="lock1Feedback"></div>
+      <div class="hint-text" id="lock1Hint"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2 — NHÂN VẬT : TRÒ CHUYỆN + THANH CẢM XÚC -->
+  <section class="screen" data-screen="lock2">
+    <div id="host-box2" style="margin-bottom:10px;">
+      <div class="host-tag" id="charTag">Thần tài</div>
+      <div class="host-line" id="lock2Line"></div>
+    </div>
+    <div class="character-wrap">
+      <div class="character-avatar" id="charAvatar">😐</div>
+      <div class="mood-bar-wrap">
+        <div class="mood-bar-track"><div class="mood-bar-fill" id="moodBarFill"></div></div>
+        <div class="mood-label" id="moodLabel">Cảm xúc: 0%</div>
+      </div>
+    </div>
+    <div class="puzzle-box" id="charQuestionBox">
+      <div class="q-counter" id="charQCounter">CÂU HỎI 1 / 3</div>
+      <div class="q-text" id="charQText"></div>
+      <div class="answer-options" id="charOptions"></div>
+      <div class="feedback" id="charFeedback"></div>
+    </div>
+    <div class="gift-reveal" id="giftReveal" style="display:none;">
+      <div class="gift-emoji" id="giftEmoji">🎁</div>
+      <div class="host-line" id="giftLine"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2.5 — MINI GAME ẨN : TRỒNG CÂY (chỉ hiện khi thanh cảm xúc chưa đầy) -->
+  <section class="screen" data-screen="plant">
+    <div id="host-boxPlant" style="margin-bottom:14px;">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="plantIntroLine"></div>
+    </div>
+    <div class="plant-area">
+      <div class="plant-avatar" id="plantAvatar">🌰</div>
+    </div>
+    <div class="q-counter" id="plantCounter">Đã tưới nước: 0 / 3</div>
+    <div class="hint-text" id="plantReaction"></div>
+  </section>
+
+  <!-- SCREEN 3 — LOCK 3 : SOUND -->
+  <section class="screen" data-screen="lock3">
+    <div id="host-box3" style="margin-bottom:10px;">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="lock3Line"></div>
+    </div>
+    <div class="radio" id="radioEl">
+      <div class="dot-light" id="radioLight"></div>
+    </div>
+    <div class="row" style="margin-bottom:10px;">
+      <button class="btn ghost" id="playMorse">▶ Phát tín hiệu</button>
+    </div>
+    <div class="morse-visual" id="morseVisual"></div>
+    <div class="puzzle-box" style="margin-top:8px;">
+      <div class="puzzle-q">Giải mã tín hiệu vừa nghe nào</div>
+      <div class="row">
+        <input type="text" id="lock3Input" placeholder="Nhập từ đã giải mã" autocomplete="off">
+        <button class="btn" id="lock3Submit">Xác nhận</button>
+      </div>
+      <div class="feedback" id="lock3Feedback"></div>
+      <div class="hint-text" id="lock3Hint"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3.4 — SONG GUESS : ĐOÁN GIAI ĐIỆU BÍ ẨN -->
+  <section class="screen" data-screen="songGuess">
+    <div id="host-boxSong" style="margin-bottom:10px;">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="songIntroLine"></div>
+    </div>
+    <div class="row" style="margin-bottom:14px;">
+      <button class="btn ghost" id="playSong">▶ Phát giai điệu</button>
+    </div>
+    <div class="puzzle-box">
+      <div class="puzzle-q">Đó là giai điệu gì?</div>
+      <div class="answer-options" id="songOptions"></div>
+      <div class="feedback" id="songFeedback"></div>
+      <div class="hint-text" id="songHint"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3.5 — CAKE : THẮP SÁNG BÁNH SINH NHẬT -->
+  <section class="screen" data-screen="cake">
+    <div id="host-boxCake" style="margin-bottom:10px;">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="cakeIntroLine"></div>
+    </div>
+    <div class="cake-wrap">
+      <div class="candle-row" id="candleRow"></div>
+      <div class="cake-top"></div>
+      <div class="cake-mid"></div>
+      <div class="cake-base"></div>
+    </div>
+    <div class="puzzle-box" style="margin-top:18px;">
+      <div class="puzzle-q" id="cakeHint"></div>
+      <div class="feedback" id="cakeFeedback"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3.7 — CUT CAKE : CẮT BÁNH CHIA PHẦN -->
+ <section class="screen" data-screen="cutCake">
+    <div id="host-boxCutCake" style="margin-bottom:10px;">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="cutCakeIntroLine"></div>
+    </div>
+    <div class="cake-wrap" id="cutCakeVisual">
+      <div class="cake-top"></div>
+      <div class="cake-mid"></div>
+      <div class="cake-base"></div>
+    </div>
+    <div class="puzzle-box" style="margin-top:18px;">
+      <div class="q-counter" id="cutCakeCounter">BÀI TOÁN 1 / 3</div>
+      <div class="puzzle-q" id="cutCakeQuestion"></div>
+      <div class="row">
+        <input type="text" id="cutCakeInput" placeholder="Nhập kết quả" autocomplete="off" inputmode="numeric">
+        <button class="btn" id="cutCakeSubmit">Cắt bánh</button>
+      </div>
+      <div class="feedback" id="cutCakeFeedback"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4 — PANDA : BẮT PANDA (thay cho câu hỏi cá nhân) -->
+  <section class="screen" data-screen="panda">
+    <div id="host-boxPanda" style="margin-bottom:10px;">
+      <div class="host-tag">Thần tài</div>
+      <div class="host-line" id="pandaIntroLine"></div>
+    </div>
+    <div class="panda-area" id="pandaArea"></div>
+    <div class="q-counter" id="pandaCounter">Đã bắt: 0 / 3</div>
+  </section>
+
+  <!-- SCREEN 5 — BOMB DEFUSE (chọn màu + mật mã) -->
+  <section class="screen" data-screen="bomb">
+    <div id="host-boxBomb" style="margin-bottom:10px;">
+      <div class="host-tag">THE HOST</div>
+      <div class="host-line" id="bombIntroLine"></div>
+    </div>
+    <div class="bomb-wrap" id="bombWrap">
+      <div class="bomb-timer" id="bombTimer">00:45</div>
+      <div class="bomb-body">
+        <div class="bomb-light" id="bombLight"></div>
+        <div class="bomb-fuse"></div>
+      </div>
+    </div>
+    <div class="puzzle-box">
+      <div class="puzzle-q" id="bombQuestion">Chọn đúng dây để tháo ngòi nổ trước khi hết giờ.</div>
+      <div class="wire-row" id="wireRow"></div>
+      <div class="feedback" id="bombFeedback"></div>
+      <div class="hint-text" id="bombHint"></div>
+    </div>
+    <div class="puzzle-box passcode-box" id="passcodeBox" style="display:none;">
+      <div class="puzzle-q" id="passcodeHint"></div>
+      <div class="row">
+        <input type="text" id="bombPasscodeInput" placeholder="Nhập mật mã" autocomplete="off">
+        <button class="btn" id="bombPasscodeSubmit">Gỡ bom</button>
+      </div>
+      <div class="feedback" id="passcodeFeedback"></div>
+      <div class="hint-text" id="passcodeHintText"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 6 — FINAL LOCK -->
+  <section class="screen" data-screen="final">
+    <div class="host-tag">Thần tài</div>
+    <div class="host-line" id="finalLine" style="margin-bottom:18px;"></div>
+    <div class="clock-big" id="finalClock">02:31</div>
+    <div class="frag-row" id="fragRow"></div>
+    <div class="puzzle-box">
+      <div class="puzzle-q">Ghép các mảnh mật mã theo đúng thứ tự để mở khóa cuối cùng:</div>
+      <div class="row">
+        <input type="text" id="finalInput" placeholder="Nhập mật mã cuối" autocomplete="off">
+        <button class="btn" id="finalSubmit">Sắp rồi</button>
+      </div>
+      <div class="feedback" id="finalFeedback"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 7 — VAULT OPEN / BOX -->
+  <section class="screen" data-screen="vault">
+    <h1 class="title" id="vaultTitle">Sắp mở</h1>
+    <p class="sub" id="vaultSub">Cánh cửa đang mở...</p>
+    <div class="box-3d" id="giftBox">
+      <div class="box-lid" id="boxLid"></div>
+      <div class="box-body"></div>
+    </div>
+    <div class="void-text" id="voidText" style="display:none;">Wait...</div>
+  </section>
+
+  <!-- SCREEN 8 — STAR UNIVERSE -->
+  <section class="screen" data-screen="universe">
+    <div class="host-tag">Thần tài</div>
+    <div class="host-line" id="universeLine" style="margin-bottom:10px;"></div>
+    <div style="position:relative;width:min(90vw,600px);height:min(50vh,360px);" id="starTapArea"></div>
+    <div class="star-field-instructions" id="starProgress">0 / 5 ngôi sao đã mở</div>
+  </section>
+
+  <!-- SCREEN 9 — 00:00 COUNTDOWN + FIREWORKS -->
+  <section class="screen" data-screen="countdown">
+    <div class="clock-big" id="countdownBig">05</div>
+  </section>
+
+  <!-- SCREEN 10 — HAPPY BIRTHDAY BURST -->
+  <section class="screen" data-screen="burst">
+    <div class="happy-title">HAPPY BIRTHDAY<span class="happy-name" id="burstName"></span></div>
+    <div class="host-tag" style="margin-top:34px;">Thần tài</div>
+    <div class="host-line" id="burstLine"></div>
+    <button class="btn" id="toGallery" style="margin-top:28px;opacity:0;pointer-events:none;transition:opacity .6s ease;">Xem Memory Vault</button>
+  </section>
+
+  <!-- SCREEN 11 — GALLERY -->
+  <section class="screen" data-screen="gallery">
+    <h1 class="title" style="font-size:clamp(22px,5vw,34px);">Bí mật</h1>
+    <p class="sub">chạm vào từng bức ảnh để mở ký ức</p>
+    <div id="gallery-grid"></div>
+    <button class="btn" id="toEnding" style="margin-top:26px;">Kết thúc</button>
+  </section>
+
+  <!-- SCREEN 12 — ENDING -->
+  <section class="screen" data-screen="ending">
+    <div class="host-tag">Thần tài</div>
+    <div class="host-line" id="endingLine" style="margin-bottom:26px;max-width:560px;"></div>
+    <div class="final-photo" id="finalPhotoWrap"></div>
+    <h1 class="title" id="endingTitle" style="opacity:0;transition:opacity 1.4s ease;"></h1>
+  </section>
+
+</div>
+
+<div id="lightbox">
+  <div id="lightboxMedia"></div>
+  <div class="lb-cap" id="lightboxCap"></div>
+  <div class="lb-date" id="lightboxDate"></div>
+  <button class="btn ghost close-btn" id="closeLightbox">Đóng</button>
+</div>
+
+<script src="script.js" defer></script>
+</body>
+</html>
